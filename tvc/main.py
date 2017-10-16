@@ -1,7 +1,8 @@
 import argparse
-import json
 import logging
-import os
+from .init_dir import main as tvc_init
+from .add_extension import main as add_extension
+from .update_logs import main as update_logs
 
 
 # Set logger up for module
@@ -12,27 +13,8 @@ ch.setLevel(logging.DEBUG)
 logger.addHandler(ch)
 
 
-def tvc_init(args):
-    """Make .tvc directory at current location."""
-
-    if not os.path.isdir(args.remote):
-        raise FileExistsError('{} not an accessible directory location'.
-                              format(args.remote))
-
-    try:
-        os.mkdir('.tvc')
-    except FileExistsError as e:
-        logger.info('.tvc folder already exists in this directory')
-        return
-
-    data = dict(remote=args.remote)
-    f = open(os.path.join('.tvc', 'config'), 'w')
-    json.dump(data, f)
-    f.close()
-
-
 def tvc_pull(args):
-    logger.debug('Not Implemented')
+    raise NotImplementedError
 
 
 def main():
@@ -52,12 +34,23 @@ def main():
                                         help='synch local data with remote')
     parser_pull.add_argument('--folder', default='C:\\Folder')
 
+    # create parser for 'add_extension' function
+    parser_pull = subparsers.add_parser('add_extension',
+                                        help='synch local data with remote')
+    parser_pull.add_argument('extension', help='extension to track')
+
+    # create parser for 'update_logs' function
+    parser_pull = subparsers.add_parser('update_logs',
+                                        help='synch local data with remote')
+
     # parse command line arguments
     args = parser.parse_args()
 
-    # switch to the right function for the input arguments
+    # # switch to the right function for the input arguments
     subparser_funcs = dict(init=tvc_init,
-                           pull=tvc_pull)
+                           pull=tvc_pull,
+                           add_extension=add_extension,
+                           update_logs=update_logs)
     subparser_funcs[args.subparser_name](args)
 
 

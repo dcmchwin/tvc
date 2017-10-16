@@ -4,10 +4,13 @@ version = '0.0.0'
 
 setup(name='tvc',
       version=version,
-      packages=[],
       test_required=[],
+      packages=[
+          'tvc'
+      ],
       entry_points={
           'console_scripts': [
+              'tvc=tvc.main:main'
           ],
       }
       )

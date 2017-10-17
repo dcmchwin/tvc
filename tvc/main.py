@@ -18,6 +18,7 @@ def tvc_pull(args):
 
 
 def main():
+    """Main function for parsing command line arguments."""
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help='subparsers help',
                                        dest='subparser_name')
@@ -35,13 +36,15 @@ def main():
     parser_pull.add_argument('--folder', default='C:\\Folder')
 
     # create parser for 'add_extension' function
-    parser_pull = subparsers.add_parser('add_extension',
-                                        help='synch local data with remote')
-    parser_pull.add_argument('extension', help='extension to track')
+    parser_add_extension = \
+        subparsers.add_parser('add_extension',
+                              help='synch local data with remote')
+    parser_add_extension.add_argument('extension', help='extension to track')
 
     # create parser for 'update_logs' function
-    parser_pull = subparsers.add_parser('update_logs',
-                                        help='synch local data with remote')
+    parser_update_logs = \
+        subparsers.add_parser('update_logs',
+                              help='synch local data with remote')
 
     # parse command line arguments
     args = parser.parse_args()

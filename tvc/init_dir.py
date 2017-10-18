@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 import os
-from tvc.utils import local_hashmap_fname, modify_last_update_time,\
+from tvc.utils import local_log_fname, modify_last_update_time,\
         remote_log_fname, config_fname
 
 # Set logger up for module
@@ -53,7 +53,7 @@ def _mk_logs(dot_tvc_dir=None):
               'w', newline='') as f:
         csv_writer = csv.writer(f)
         csv_writer.writerow(['md5', 'filename', 'directory'])
-    with open(os.path.join(dot_tvc_dir, local_hashmap_fname),
+    with open(os.path.join(dot_tvc_dir, local_log_fname),
               'w', newline='') as f:
         csv_writer = csv.writer(f)
-        csv_writer.writerow(['md5', 'filename'])
+        csv_writer.writerow(['md5', 'filename', 'directory'])

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from time import strptime, mktime
-from tvc.utils import remote_log_fname, config_fname, time_format
+from tvc.utils import local_log_fname, remote_log_fname, config_fname, time_format
 
 
 # Set logger up for module
@@ -16,26 +16,42 @@ ch.setLevel(logging.DEBUG)
 logger.addHandler(ch)
 
 def main(args):
-    mk_remote_log()
+    """Update the logs."""
+    # assume that local data dir is current dir
+    local_data_dir = os.path.abspath('')
+    dot_tvc_dir = os.path.join(local_data_dir, '.tvc')
+
+    # get required config data (path to remote dir, basically)
+    config_path = os.path.join(dot_tvc_dir, config_fname)
+    with open(config_path, 'r') as fin:
+        config_data = json.load(fin)
+
+    # make remote log
+    logger.info('\nUPDATING LOG OF REMOTE DATA')
+    mk_log(dot_tvc_dir, config_data['remote'], remote_log_fname)
+
+    # make local log
+    logger.info('\nUPDATING LOG OF LOCAL DATA')
+    mk_log(dot_tvc_dir, local_data_dir, local_log_fname)
 
 
 def mk_local_hash_map():
     pass
 
 
-def mk_remote_log(dot_tvc_dir=None):
+def mk_log(dot_tvc_dir, data_dir, log_filename):
     """Get csv mapping hash files."""
     if dot_tvc_dir is None:
         dot_tvc_dir = os.path.abspath('.tvc')
 
     config_path = os.path.join(dot_tvc_dir, config_fname)
     with open(config_path, 'r') as fin:
-        data = json.load(fin)
+        config_data = json.load(fin)
 
     # Get list of filenames and folders
-    filename, directory, filepath =\
-        _read_all_possible_tracked_files(data['remote'],
-                                         data['tracked_extensions'])
+    filename, directory, filepath = \
+        _read_all_possible_tracked_files(data_dir,
+                                         config_data['tracked_extensions'])
 
     # Init empty md5 list
     md5 = [None] * len(filename)
@@ -45,7 +61,7 @@ def mk_remote_log(dot_tvc_dir=None):
         _read_filepaths_and_md5_at_previous_update(dot_tvc_dir)
 
     for i, fp in enumerate(filepath):
-        fp_full = os.path.join(data['remote'], fp)
+        fp_full = os.path.join(data_dir, fp)
 
         # get index of where filepath exists in list of
         # old filepaths
@@ -58,7 +74,7 @@ def mk_remote_log(dot_tvc_dir=None):
         # calculate md5 hash if filename is not already present
         # in the list of filenames made at last update OR if it
         # has been altered since the last update
-        last_update_time = mktime(strptime(data['last_update'],
+        last_update_time = mktime(strptime(config_data['last_update'],
                                            time_format))
         has_changed = is_recently_altered(fp_full, last_update_time)
         if has_changed or not fp_in_last_update:
@@ -67,16 +83,16 @@ def mk_remote_log(dot_tvc_dir=None):
             md5[i] = get_md5_hash(fp_full)
         else:
             logger.debug('File {} of {}\nSkipping Hash {}'.
-                        format(i + 1, len(filepath), fp))
+                         format(i + 1, len(filepath), fp))
             md5[i] = md5_lu[j]
 
-    # Rewrite log file contents
-    with open(os.path.join(dot_tvc_dir, remote_log_fname),
-              'w', newline='') as logf:
-        csv_writer = csv.writer(logf)
-        csv_writer.writerow(['md5', 'filename', 'directory'])
-        for i, fn in enumerate(filename):
-            csv_writer.writerow([md5[i], fn, directory[i]])
+        # Rewrite log file contents
+        with open(os.path.join(dot_tvc_dir, log_filename),
+                  'w', newline='') as logf:
+            csv_writer = csv.writer(logf)
+            csv_writer.writerow(['md5', 'filename', 'directory'])
+            for i, fn in enumerate(filename):
+                csv_writer.writerow([md5[i], fn, directory[i]])
 
 
 def _read_all_possible_tracked_files(remote_folder_path,
@@ -154,4 +170,19 @@ if __name__ == "__main__":
     # filepath, md5 = _read_filepaths_and_md5_at_previous_update(dot_tvc_dir)
     # print(filepath)
 
-    mk_remote_log(dot_tvc_dir)
+    # get required config data (path to remote dir, basically)
+    dot_tvc_dir = 'C:\\Users\\dcm\\Documents\\Git\\tvc\\data\\.tvc'
+    config_path = os.path.join(dot_tvc_dir, config_fname)
+    with open(config_path, 'r') as fin:
+        config_data = json.load(fin)
+
+    mk_log(dot_tvc_dir, config_data['remote'], remote_log_fname)
+
+    # get required config data (path to remote dir, basically)
+    local_data_dir = 'C:\\Users\\dcm\\Documents\\Git\\tvc\\data'
+    dot_tvc_dir = os.path.join(local_data_dir, '.tvc')
+    config_path = os.path.join(dot_tvc_dir, config_fname)
+    with open(config_path, 'r') as fin:
+        config_data = json.load(fin)
+
+    mk_log(dot_tvc_dir, local_data_dir, local_log_fname)

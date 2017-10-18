@@ -1,3 +1,5 @@
 /tvc_venv/
 *.egg-info/
 __pycache__/
+.idea/
+.cache/

@@ -17,6 +17,10 @@ def tvc_pull(args):
     raise NotImplementedError
 
 
+def _check_version():
+    pass
+
+
 def main():
     """Main function for parsing command line arguments."""
     parser = argparse.ArgumentParser()
@@ -38,13 +42,13 @@ def main():
     # create parser for 'add_extension' function
     parser_add_extension = \
         subparsers.add_parser('add_extension',
-                              help='synch local data with remote')
+                              help='add file extension to list of tracked file types')
     parser_add_extension.add_argument('extension', help='extension to track')
 
     # create parser for 'update_logs' function
     parser_update_logs = \
         subparsers.add_parser('update_logs',
-                              help='synch local data with remote')
+                              help='update logs and hash associations of data')
 
     # parse command line arguments
     args = parser.parse_args()

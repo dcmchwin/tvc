@@ -5,7 +5,7 @@ import os
 import time
 
 time_format = '%Y-%m-%dT%H:%M:%S%z'
-local_log_fname = 'local_hash_map.csv'
+local_log_fname = 'local_log.csv'
 remote_log_fname = 'remote_log.csv'
 config_fname = 'config'
 

@@ -5,7 +5,8 @@ import json
 import logging
 import os
 from datetime import datetime
-from tvc.utils import local_log_fname, remote_log_fname, config_fname, time_format, modify_last_update_time
+from tvc.utils import local_log_fname, remote_log_fname, config_fname,\
+    time_format, modify_last_update_time, read_filepaths_and_md5_at_previous_update
 
 
 # Set logger up for module
@@ -57,7 +58,7 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
 
     # Get list of filepaths and hashes at last update
     filepath_lu, md5_lu = \
-        _read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename)
+        read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename)
 
     for i, fp in enumerate(filepath):
         fp_full = os.path.join(data_dir, fp)
@@ -83,13 +84,13 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
                          format(i + 1, len(filepath), fp))
             md5[i] = md5_lu[j]
 
-        # Rewrite log file contents
-        with open(os.path.join(dot_tvc_dir, log_filename),
-                  'w', newline='') as logf:
-            csv_writer = csv.writer(logf)
-            csv_writer.writerow(['md5', 'filename', 'directory'])
-            for i, fn in enumerate(filename):
-                csv_writer.writerow([md5[i], fn, directory[i]])
+    # Rewrite log file contents
+    with open(os.path.join(dot_tvc_dir, log_filename),
+              'w', newline='') as logf:
+        csv_writer = csv.writer(logf)
+        csv_writer.writerow(['md5', 'filename', 'directory'])
+        for i, fn in enumerate(filename):
+            csv_writer.writerow([md5[i], fn, directory[i]])
 
 
 def _read_all_possible_tracked_files(data_dir,
@@ -113,29 +114,6 @@ def _read_all_possible_tracked_files(data_dir,
         filepath.extend([os.path.join(shorten(root), fn) for fn in names])
 
     return filename, directory, filepath
-
-
-def _read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename):
-    """Read filepaths at previous update of remote log file."""
-    if dot_tvc_dir is None:
-        dot_tvc_dir = os.path.abspath('.tvc')
-    filename = []
-    directory = []
-    md5 = []
-    with open(os.path.join(dot_tvc_dir, log_filename)) as logf:
-        csv_reader = csv.reader(logf)
-        next(csv_reader)  # skip header row
-        # below relies on column format being: (md5 hash, filename, folder)
-        for row in csv_reader:
-            # skip empty rows
-            if row:
-                md5.append(row[0])
-                filename.append(row[1])
-                directory.append(row[2])
-    filepath = [os.path.join(d, f)
-                for d, f in zip(directory, filename)]
-
-    return filepath, md5
 
 
 def is_recently_altered(filepath, last_update_string):

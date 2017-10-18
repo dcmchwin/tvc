@@ -3,6 +3,7 @@ import logging
 from .init_dir import main as tvc_init
 from .add_extension import main as add_extension
 from .update_logs import main as update_logs
+from .pull import main as tvc_pull
 
 
 # Set logger up for module
@@ -11,14 +12,6 @@ logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 logger.addHandler(ch)
-
-
-def tvc_pull(args):
-    raise NotImplementedError
-
-
-def _check_version():
-    pass
 
 
 def main():

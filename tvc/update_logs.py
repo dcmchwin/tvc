@@ -4,8 +4,8 @@ import hashlib
 import json
 import logging
 import os
-from time import strptime, mktime
-from tvc.utils import local_log_fname, remote_log_fname, config_fname, time_format
+from datetime import datetime
+from tvc.utils import local_log_fname, remote_log_fname, config_fname, time_format, modify_last_update_time
 
 
 # Set logger up for module
@@ -34,9 +34,8 @@ def main(args):
     logger.info('\nUPDATING LOG OF LOCAL DATA')
     mk_log(dot_tvc_dir, local_data_dir, local_log_fname)
 
-
-def mk_local_hash_map():
-    pass
+    # modify the last update time
+    modify_last_update_time()
 
 
 def mk_log(dot_tvc_dir, data_dir, log_filename):
@@ -58,7 +57,7 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
 
     # Get list of filepaths and hashes at last update
     filepath_lu, md5_lu = \
-        _read_filepaths_and_md5_at_previous_update(dot_tvc_dir)
+        _read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename)
 
     for i, fp in enumerate(filepath):
         fp_full = os.path.join(data_dir, fp)
@@ -74,9 +73,7 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
         # calculate md5 hash if filename is not already present
         # in the list of filenames made at last update OR if it
         # has been altered since the last update
-        last_update_time = mktime(strptime(config_data['last_update'],
-                                           time_format))
-        has_changed = is_recently_altered(fp_full, last_update_time)
+        has_changed = is_recently_altered(fp_full, config_data['last_update'])
         if has_changed or not fp_in_last_update:
             logger.info('File {} of {}\nHashing {}'.
                         format(i + 1, len(filepath), fp))
@@ -95,33 +92,37 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
                 csv_writer.writerow([md5[i], fn, directory[i]])
 
 
-def _read_all_possible_tracked_files(remote_folder_path,
+def _read_all_possible_tracked_files(data_dir,
                                      tracked_extensions):
     """Get lists of filepaths, names and folders for tracked files."""
-    directory = []
+    directory = []  # directory path is relative to remote_folder_path
     filename = []
     filepath = []
 
     def getext(s): return os.path.splitext(s)[1]
 
-    for root, _, names in os.walk(remote_folder_path, topdown=True):
+    # ensure directory path is relative to remote folder path
+    start_idx = len(data_dir) + len(os.sep)
+    def shorten(s): return s[start_idx:]
+
+    for root, _, names in os.walk(data_dir, topdown=True):
         names = [n for n in names
                  if getext(n) in tracked_extensions]
         filename.extend(names)
-        directory.extend([root] * len(names))
-        filepath.extend([os.path.join(root, fn) for fn in names])
+        directory.extend([shorten(root)] * len(names))
+        filepath.extend([os.path.join(shorten(root), fn) for fn in names])
 
     return filename, directory, filepath
 
 
-def _read_filepaths_and_md5_at_previous_update(dot_tvc_dir=None):
+def _read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename):
     """Read filepaths at previous update of remote log file."""
     if dot_tvc_dir is None:
         dot_tvc_dir = os.path.abspath('.tvc')
     filename = []
     directory = []
     md5 = []
-    with open(os.path.join(dot_tvc_dir, remote_log_fname)) as logf:
+    with open(os.path.join(dot_tvc_dir, log_filename)) as logf:
         csv_reader = csv.reader(logf)
         next(csv_reader)  # skip header row
         # below relies on column format being: (md5 hash, filename, folder)
@@ -137,12 +138,23 @@ def _read_filepaths_and_md5_at_previous_update(dot_tvc_dir=None):
     return filepath, md5
 
 
-def is_recently_altered(filepath, last_update_time):
+def is_recently_altered(filepath, last_update_string):
     """Determine whether a file is newly created or recently modified."""
+    # Get time in seconds of last update time, assuming time was recorded
+    # as per time_format
+    last_update_datetime = datetime.strptime(last_update_string,
+                                             time_format)
+    last_update_timestamp = last_update_datetime.timestamp()
+
+    # Get timestamps for file modification and creation times
+    # (Creation time tells you when the file was added to its current folder
+    # and modification time tells you when the file was last modified)
     stats = os.stat(filepath)
     modify_time = stats.st_mtime
     creation_time = stats.st_ctime
-    if last_update_time < modify_time or last_update_time < creation_time:
+
+    if (last_update_timestamp < modify_time
+        or last_update_timestamp < creation_time):
         output = True
     else:
         output = False
@@ -170,13 +182,13 @@ if __name__ == "__main__":
     # filepath, md5 = _read_filepaths_and_md5_at_previous_update(dot_tvc_dir)
     # print(filepath)
 
-    # get required config data (path to remote dir, basically)
-    dot_tvc_dir = 'C:\\Users\\dcm\\Documents\\Git\\tvc\\data\\.tvc'
-    config_path = os.path.join(dot_tvc_dir, config_fname)
-    with open(config_path, 'r') as fin:
-        config_data = json.load(fin)
-
-    mk_log(dot_tvc_dir, config_data['remote'], remote_log_fname)
+    # # get required config data (path to remote dir, basically)
+    # dot_tvc_dir = 'C:\\Users\\dcm\\Documents\\Git\\tvc\\data\\.tvc'
+    # config_path = os.path.join(dot_tvc_dir, config_fname)
+    # with open(config_path, 'r') as fin:
+    #     config_data = json.load(fin)
+    #
+    # mk_log(dot_tvc_dir, config_data['remote'], remote_log_fname)
 
     # get required config data (path to remote dir, basically)
     local_data_dir = 'C:\\Users\\dcm\\Documents\\Git\\tvc\\data'

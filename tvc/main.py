@@ -1,3 +1,8 @@
+"""tvc main module: functions for command line interface to data
+version control tool.
+
+"""
+
 import argparse
 import logging
 from .init_dir import main as tvc_init
@@ -46,7 +51,7 @@ def main():
     # parse command line arguments
     args = parser.parse_args()
 
-    # # switch to the right function for the input arguments
+    # switch to the right function for the input arguments
     subparser_funcs = dict(init=tvc_init,
                            pull=tvc_pull,
                            add_extension=add_extension,

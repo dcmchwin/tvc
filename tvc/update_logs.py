@@ -1,4 +1,6 @@
 """Module to update logs to agree with list of tracked extensions."""
+
+from argparse import Namespace
 import csv
 import hashlib
 import json
@@ -6,8 +8,9 @@ import logging
 import os
 from datetime import datetime
 from tvc.utils import local_log_fname, remote_log_fname, config_fname,\
-    time_format, modify_last_update_time, read_filepaths_and_md5_at_previous_update
-
+    time_format, modify_last_update_time, read_filepaths_and_md5_at_previous_update,\
+    get_config_data
+from typing import List, Tuple
 
 # Set logger up for module
 logger = logging.getLogger(__file__)
@@ -16,16 +19,24 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 logger.addHandler(ch)
 
-def main(args):
-    """Update the logs."""
-    # assume that local data dir is current dir
+def main(args: Namespace) -> None:
+    """Update the remote and local logs.
+
+    This function updates the local log file so that it lists filepaths
+    and md5 hashes of all the tracked files in the local data directory.
+    It then performs the same function for the files in the remote
+    data directory. Finally, 'time of last update' field in the config
+    file is updated.
+
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the update_logs function
+    """
+    # assume that local data dir is current dir and get config data
     local_data_dir = os.path.abspath('')
     dot_tvc_dir = os.path.join(local_data_dir, '.tvc')
-
-    # get required config data (path to remote dir, basically)
-    config_path = os.path.join(dot_tvc_dir, config_fname)
-    with open(config_path, 'r') as fin:
-        config_data = json.load(fin)
+    config_data = get_config_data(dot_tvc_dir)
 
     # make remote log
     logger.info('\nUPDATING LOG OF REMOTE DATA')
@@ -39,21 +50,43 @@ def main(args):
     modify_last_update_time()
 
 
-def mk_log(dot_tvc_dir, data_dir, log_filename):
-    """Get csv mapping hash files."""
+def mk_log(dot_tvc_dir: str, data_dir: str, log_filename: str) -> None:
+    """Get csv mapping hash files.
+
+    Update a specified log file in the specified .tvc directory to list
+    the tracked contents of the specified data directory. File md5 hashes
+    are only recalculated if:
+        - The file is of a tracked type
+        AND AT LEAST ONE OF
+        - The file has been modified since the last update time (in config)
+        - The file has been created in this directory since the last update time
+        - The file was not tracked at the last update
+    A log file is saved at the end of this function.
+
+    Parameters
+    ----------
+    dot_tvc_dir: str
+        filepath to the .tvc directory
+    data_dir: str
+        absolute filepath to the data directory (local or remote)
+    log_filename: str
+        name of the log file (in the .tvc directory) to update
+
+    Returns
+    -------
+
+    """
     if dot_tvc_dir is None:
         dot_tvc_dir = os.path.abspath('.tvc')
 
-    config_path = os.path.join(dot_tvc_dir, config_fname)
-    with open(config_path, 'r') as fin:
-        config_data = json.load(fin)
+    config_data = get_config_data(dot_tvc_dir)
 
     # Get list of filenames and folders
     filename, directory, filepath = \
         _read_all_possible_tracked_files(data_dir,
                                          config_data['tracked_extensions'])
 
-    # Init empty md5 list
+    # Instantiate empty md5 list
     md5 = [None] * len(filename)
 
     # Get list of filepaths and hashes at last update
@@ -61,6 +94,8 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
         read_filepaths_and_md5_at_previous_update(dot_tvc_dir, log_filename)
 
     for i, fp in enumerate(filepath):
+
+        # get absolute paths of all the data files
         fp_full = os.path.join(data_dir, fp)
 
         # get index of where filepath exists in list of
@@ -93,13 +128,39 @@ def mk_log(dot_tvc_dir, data_dir, log_filename):
             csv_writer.writerow([md5[i], fn, directory[i]])
 
 
-def _read_all_possible_tracked_files(data_dir,
-                                     tracked_extensions):
-    """Get lists of filepaths, names and folders for tracked files."""
-    directory = []  # directory path is relative to remote_folder_path
+def _read_all_possible_tracked_files(\
+        data_dir: str, tracked_extensions: List[str]) -> \
+        Tuple[List[str], List[str], List[str]]:
+    """Get lists of filepaths, names and folders for tracked files.
+
+    Walk through a given data directory, and find all files of matching
+    the given list of matched extension types. Return a list of the names
+    of these files, a list of the relative paths to these files from
+    the data directory, and a list of the relative paths to the directories
+    of these files from the data directory.
+
+    Parameters
+    ----------
+    data_dir: str
+        Absolute filepath of data directory to walk through
+    tracked_extensions: List[str]
+        List of tracked extensions
+
+    Returns
+    -------
+    filename: List[str]
+        List of filenames of files to track
+    directory: List[str]
+        List of relative paths (from data_dir) of files to tracks
+    filepath: List[str]
+        List of relative paths (from data_dir) of files to tracks
+
+    """
+    directory = []  # directory path is relative to data_dir
     filename = []
     filepath = []
 
+    # helper function to get file extension
     def getext(s): return os.path.splitext(s)[1]
 
     # ensure directory path is relative to remote folder path
@@ -116,8 +177,26 @@ def _read_all_possible_tracked_files(data_dir,
     return filename, directory, filepath
 
 
-def is_recently_altered(filepath, last_update_string):
-    """Determine whether a file is newly created or recently modified."""
+def is_recently_altered(filepath: str, last_update_string: str) -> bool:
+    """Determine whether a file is newly created, or recently modified.
+
+    Folder system is used to interrogate 'creation time' and 'modification
+    time' of the file in question.
+
+    Parameters
+    ----------
+    filepath: str
+        Path to file to investigate
+    last_update_string: str
+        string indicating last update time (from .tvc/config), formatted
+        according to time_format
+
+    Returns
+    -------
+    output: bool
+        logical for whether file has been recently altered or not
+
+    """
     # Get time in seconds of last update time, assuming time was recorded
     # as per time_format
     last_update_datetime = datetime.strptime(last_update_string,
@@ -141,13 +220,27 @@ def is_recently_altered(filepath, last_update_string):
 
 
 def get_md5_hash(filepath):
-    """Get md5 hash of contents of file at given absolute path."""
+    """Get md5 hash of entire data file at specified filepath.
+
+    Parameters
+    ----------
+    filepath: str
+        path to the input data file
+
+    Returns
+    -------
+    md5_hash: str
+        md5 hash of input file
+
+    """
+    # Read in chunks of file sequentially, in units of size blocksize
     blocksize = 2 ** 12
     hasher = hashlib.md5()
     with open(filepath, 'rb') as f:
         for chunk in iter(lambda: f.read(blocksize), b""):
             hasher.update(chunk)
-    return hasher.hexdigest()
+    md5_hash = hasher.hexdigest()
+    return md5_hash
 
 
 if __name__ == "__main__":

@@ -1,13 +1,22 @@
-"""Add extensions to list."""
+"""Functions for adding extensions to the list of tracked files.
+
+This functions in this module facilitate adding extensions to the
+config file in a .tvc directory.
+"""
+
 import json
 import os
 
 
 def main(args):
-    """Add input extension to list of extensions in config file."""
+    """Add input extension to list of extensions in config file.
+
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the add_extension function"""
 
     config_path = os.path.join('.tvc', 'config')
-
     with open(config_path, 'r') as fin:
         data = json.load(fin)
 

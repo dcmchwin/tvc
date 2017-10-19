@@ -16,6 +16,12 @@ logger.addHandler(ch)
 
 
 def main(args):
+    """Create a new .tvc directory in the current directory.
+
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the init_dir function"""
     _mk_tvc_dir(args)
     _mk_config(args)
     _mk_logs()
@@ -23,7 +29,12 @@ def main(args):
 
 
 def _mk_tvc_dir(args):
-    """Make .tvc directory at current location."""
+    """Make an empty .tvc directory at current location.
+    
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the init_dir function"""
     if not os.path.isdir(args.remote):
         raise FileExistsError('{} not an accessible directory location'.
                               format(args.remote))
@@ -36,7 +47,12 @@ def _mk_tvc_dir(args):
 
 
 def _mk_config(args):
-    """Make config file in .tvc directory."""
+    """Make config file in .tvc directory.
+
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the init_dir function"""
     data = dict(remote=args.remote,
                 tracked_extensions=[])
     f = open(os.path.join('.tvc', config_fname), 'w')
@@ -45,7 +61,12 @@ def _mk_config(args):
 
 
 def _mk_logs(dot_tvc_dir=None):
-    """Make empty log files for remote contents and local mappings."""
+    """Make empty log files for remote contents and local mappings.
+
+    Parameters
+    ----------
+    dot_tvc_dir: str
+        path to .tvc directory"""
     if dot_tvc_dir is None:
         dot_tvc_dir = os.path.abspath('.tvc')
 

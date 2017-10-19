@@ -17,7 +17,13 @@ logger.addHandler(ch)
 
 
 def main(args):
-    """Copy tracked files from remote to local."""
+    """Copy tracked files from remote to local.
+
+    Parameters
+    ----------
+    args: Namespace
+        Command line arguments passed to the pull function
+    """
     # assume that local data dir is current dir
     local_data_dir = os.path.abspath('')
     dot_tvc_dir = os.path.join(local_data_dir, '.tvc')

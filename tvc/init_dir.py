@@ -28,34 +28,47 @@ def main(args):
     modify_last_update_time()
 
 
-def _mk_tvc_dir(args):
+def _mk_tvc_dir(args, dot_tvc_dir=None):
     """Make an empty .tvc directory at current location.
     
     Parameters
     ----------
     args: Namespace
-        Command line arguments passed to the init_dir function"""
+        Command line arguments passed to the init_dir function
+    dot_tvc_dir: str
+        path to .tvc directory
+    """
+    if dot_tvc_dir is None:
+        dot_tvc_dir = os.path.abspath('.tvc')
+
     if not os.path.isdir(args.remote):
         raise FileExistsError('{} not an accessible directory location'.
                               format(args.remote))
 
     try:
-        os.mkdir('.tvc')
+        os.mkdir(dot_tvc_dir)
     except FileExistsError:
         logger.info('.tvc folder already exists in this directory')
         return
 
 
-def _mk_config(args):
+def _mk_config(args, dot_tvc_dir=None):
     """Make config file in .tvc directory.
 
     Parameters
     ----------
     args: Namespace
-        Command line arguments passed to the init_dir function"""
+        Command line arguments passed to the init_dir function
+    dot_tvc_dir: str
+        path to .tvc directory
+    """
+    if dot_tvc_dir is None:
+        dot_tvc_dir = os.path.abspath('.tvc')
+
     data = dict(remote=args.remote,
-                tracked_extensions=[])
-    f = open(os.path.join('.tvc', config_fname), 'w')
+                tracked_extensions=[],
+                last_update="")
+    f = open(os.path.join(dot_tvc_dir, config_fname), 'w')
     json.dump(data, f)
     f.close()
 
@@ -66,7 +79,8 @@ def _mk_logs(dot_tvc_dir=None):
     Parameters
     ----------
     dot_tvc_dir: str
-        path to .tvc directory"""
+        path to .tvc directory
+    """
     if dot_tvc_dir is None:
         dot_tvc_dir = os.path.abspath('.tvc')
 

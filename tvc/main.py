@@ -5,10 +5,10 @@ version control tool.
 
 import argparse
 import logging
-from .init_dir import main as tvc_init
-from .add_extension import main as add_extension
-from .update_logs import main as update_logs
-from .pull import main as tvc_pull
+from tvc.init_dir import main as tvc_init
+from tvc.add_extension import main as add_extension
+from tvc.update_logs import main as update_logs
+from tvc.pull import main as tvc_pull
 
 
 # Set logger up for module

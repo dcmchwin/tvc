@@ -24,7 +24,6 @@ def get_config_data(dot_tvc_dir: str) -> Dict[str, object]:
     config_data: Dict[str: obj]
         configuration data for this tvc directory, including information
         like time of last update and path to remote data directory
-
     """
     # get required config data (path to remote dir, basically)
     config_path = os.path.join(dot_tvc_dir, config_fname)
@@ -79,9 +78,18 @@ def read_filepaths_and_md5_at_previous_update(
     return filepath, md5
 
 
-def modify_last_update_time() -> None:
-    """Modify the 'last_update' time to now."""
-    dot_tvc_dir = os.path.abspath('.tvc')
+def modify_last_update_time(dot_tvc_dir: str=None) -> None:
+    """Modify the 'last_update' time to now.
+
+    Parameters
+    ----------
+    dot_tvc_dir: str
+        path to .tvc directory
+    """
+    if dot_tvc_dir is None:
+        # assume that local data dir is current dir
+        dot_tvc_dir = os.path.abspath('.tvc')
+
     config_path = os.path.join(dot_tvc_dir, 'config')
     data = get_config_data(dot_tvc_dir)
 

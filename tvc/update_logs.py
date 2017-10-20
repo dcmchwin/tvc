@@ -19,7 +19,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 logger.addHandler(ch)
 
-def main(args: Namespace) -> None:
+def main(args: Namespace, dot_tvc_dir: str=None) -> None:
     """Update the remote and local logs.
 
     This function updates the local log file so that it lists filepaths
@@ -32,10 +32,15 @@ def main(args: Namespace) -> None:
     ----------
     args: Namespace
         Command line arguments passed to the update_logs function
+    dot_tvc_dir: str
+        path to .tvc directory
     """
-    # assume that local data dir is current dir and get config data
-    local_data_dir = os.path.abspath('')
-    dot_tvc_dir = os.path.join(local_data_dir, '.tvc')
+    if dot_tvc_dir is None:
+        # assume that local data dir is current dir
+        dot_tvc_dir = os.path.abspath('.tvc')
+
+    local_data_dir = os.path.dirname(dot_tvc_dir)
+
     config_data = get_config_data(dot_tvc_dir)
 
     # make remote log
@@ -47,7 +52,7 @@ def main(args: Namespace) -> None:
     mk_log(dot_tvc_dir, local_data_dir, local_log_fname)
 
     # modify the last update time
-    modify_last_update_time()
+    modify_last_update_time(dot_tvc_dir)
 
 
 def mk_log(dot_tvc_dir: str, data_dir: str, log_filename: str) -> None:

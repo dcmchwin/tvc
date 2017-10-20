@@ -4,7 +4,7 @@ version = '0.0.0'
 
 setup(name='tvc',
       version=version,
-      test_required=[],
+      tests_require=['pytest'],
       packages=[
           'tvc'
       ],
